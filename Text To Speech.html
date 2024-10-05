@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Text-to-Speech</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 500px;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 24px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+        textarea {
+            width: 100%;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            border-radius: 10px;
+            color: #fff;
+            padding: 15px;
+            font-size: 16px;
+            margin-bottom: 20px;
+            resize: none;
+            box-sizing: border-box;
+        }
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        select, input[type="range"] {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            border-radius: 5px;
+            color: #fff;
+            padding: 10px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        input[type="range"] {
+            margin-top: 5px;
+        }
+        button {
+            background: #0f3460;
+            color: #fff;
+            border: none;
+            border-radius: 50px;
+            padding: 15px 30px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            width: 100%;
+        }
+        button:hover {
+            background: #16213e;
+        }
+        .animation {
+            height: 50px;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .bar {
+            width: 10px;
+            height: 5px;
+            background: #fff;
+            margin: 0 3px;
+            border-radius: 10px;
+            animation: sound 0ms -600ms linear infinite alternate;
+        }
+        @keyframes sound {
+            0% {
+                height: 5px;
+            }
+            100% {
+                height: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Text-to-Speech</h1>
+        <textarea id="text-input" placeholder="Enter your text here..."></textarea>
+        <div class="controls">
+            <select id="voice-select"></select>
+            <div>
+                <label for="rate">Speed:</label>
+                <input type="range" id="rate" min="0.5" max="2" value="1" step="0.1">
+            </div>
+            <div>
+                <label for="pitch">Pitch:</label>
+                <input type="range" id="pitch" min="0" max="2" value="1" step="0.1">
+            </div>
+        </div>
+        <button id="speak-btn">Speak</button>
+        <div class="animation">
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+            <div class="bar"></div>
+        </div>
+    </div>
+
+    <script>
+        const textInput = document.getElementById('text-input');
+        const voiceSelect = document.getElementById('voice-select');
+        const rateInput = document.getElementById('rate');
+        const pitchInput = document.getElementById('pitch');
+        const speakBtn = document.getElementById('speak-btn');
+        const animation = document.querySelector('.animation');
+
+        let voices = [];
+
+        function populateVoiceList() {
+            voices = speechSynthesis.getVoices();
+            voiceSelect.innerHTML = voices
+                .map((voice, index) => `<option value="${index}">${voice.name} (${voice.lang})</option>`)
+                .join('');
+            
+            setDefaultVoice();
+        }
+
+        function setDefaultVoice() {
+            const defaultVoice = voices.findIndex(voice => voice.lang === 'en-IN');
+            if (defaultVoice !== -1) {
+                voiceSelect.selectedIndex = defaultVoice;
+            } else {
+                // Fallback to first English voice if English (India) is not available
+                const englishVoice = voices.findIndex(voice => voice.lang.startsWith('en'));
+                voiceSelect.selectedIndex = englishVoice !== -1 ? englishVoice : 0;
+            }
+        }
+
+        function initVoices() {
+            voices = speechSynthesis.getVoices();
+            if (voices.length !== 0) {
+                populateVoiceList();
+            } else {
+                // If voices are not immediately available, wait for the voiceschanged event
+                speechSynthesis.addEventListener('voiceschanged', () => {
+                    voices = speechSynthesis.getVoices();
+                    populateVoiceList();
+                });
+            }
+        }
+
+        // Initialize voices immediately
+        initVoices();
+
+        // Ensure voices are populated and default is set when the page is interactive
+        document.addEventListener('DOMContentLoaded', initVoices);
+
+        speakBtn.addEventListener('click', () => {
+            const text = textInput.value;
+            if (text) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.voice = voices[voiceSelect.value];
+                utterance.rate = rateInput.value;
+                utterance.pitch = pitchInput.value;
+
+                utterance.onstart = () => {
+                    animation.style.display = 'flex';
+                    speakBtn.disabled = true;
+                };
+
+                utterance.onend = () => {
+                    animation.style.display = 'none';
+                    speakBtn.disabled = false;
+                };
+
+                speechSynthesis.speak(utterance);
+            }
+        });
+
+        // Animate bars
+        const bars = document.querySelectorAll('.bar');
+        bars.forEach((bar, index) => {
+            bar.style.animation = `sound ${(index + 1) * 200}ms -600ms linear infinite alternate`;
+        });
+    </script>
+</body>
+</html>
