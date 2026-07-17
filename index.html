@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0b0d18">
+    <title>Vocalise AI — Premium TTS Pro</title>
+    <meta name="description" content="Premium browser-based text-to-speech with multi-accent voices, live word highlighting and audio export.">
+
+    <!-- PDF / DOCX libs -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --transition-speed: 0.25s;
+            --spring: all 0.25s cubic-bezier(.2,.8,.2,1);
+
+            /* DARK (default) */
+            --bg-gradient: radial-gradient(1200px 800px at 10% -10%, rgba(99,102,241,0.18), transparent 60%),
+                           radial-gradient(1000px 700px at 110% 10%, rgba(236,72,153,0.15), transparent 60%),
+                           linear-gradient(135deg, #0b0d18 0%, #11142a 100%);
+            --panel-bg: rgba(22, 24, 38, 0.72);
+            --panel-solid: #161826;
+            --panel-border: rgba(255, 255, 255, 0.08);
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --text-faint: #6b7280;
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --primary-glow: rgba(99, 102, 241, 0.35);
+            --secondary: #ec4899;
+            --secondary-hover: #db2777;
+            --secondary-glow: rgba(236, 72, 153, 0.3);
+            --success: #10b981;
+            --success-hover: #059669;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --control-bg: rgba(255, 255, 255, 0.05);
+            --control-bg-hover: rgba(255, 255, 255, 0.09);
+            --control-border: rgba(255, 255, 255, 0.08);
+            --shadow-lg: 0 30px 60px -20px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255,255,255,0.02);
+            --dropzone-hover: rgba(99, 102, 241, 0.08);
+            --highlight-bg: rgba(99, 102, 241, 0.32);
+            --highlight-shadow: 0 1px 8px rgba(99, 102, 241, 0.4);
+            --scroll-thumb: rgba(255,255,255,0.12);
+        }
+
+        [data-theme="light"] {
+            --bg-gradient: radial-gradient(1200px 800px at 10% -10%, rgba(79,70,229,0.10), transparent 60%),
+                           radial-gradient(1000px 700px at 110% 10%, rgba(219,39,119,0.08), transparent 60%),
+                           linear-gradient(135deg, #f6f7fb 0%, #e9ecf6 100%);
+            --panel-bg: rgba(255, 255, 255, 0.75);
+            --panel-solid: #ffffff;
+            --panel-border: rgba(99, 102, 241, 0.14);
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --text-faint: #94a3b8;
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-glow: rgba(79, 70, 229, 0.25);
+            --secondary: #db2777;
+            --secondary-hover: #be185d;
+            --secondary-glow: rgba(219, 39, 119, 0.2);
+            --success: #059669;
+            --success-hover: #047857;
+            --control-bg: rgba(0, 0, 0, 0.04);
+            --control-bg-hover: rgba(0, 0, 0, 0.07);
+            --control-border: rgba(0, 0, 0, 0.08);
+            --shadow-lg: 0 30px 60px -20px rgba(15, 23, 42, 0.18), 0 0 0 1px rgba(0,0,0,0.02);
+            --dropzone-hover: rgba(79, 70, 229, 0.05);
+            --highlight-bg: rgba(79, 70, 229, 0.18);
+            --highlight-shadow: 0 1px 8px rgba(79, 70, 229, 0.25);
+            --scroll-thumb: rgba(0,0,0,0.15);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        *::-webkit-scrollbar { width: 8px; height: 8px; }
+        *::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border-radius: 8px; }
+        *::-webkit-scrollbar-track { background: transparent; }
+
+        html, body { height: 100%; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-gradient);
+            background-attachment: fixed;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px 15px;
+            transition: background var(--transition-speed) ease, color var(--transition-speed) ease;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .container {
+            position: relative;
+            background: var(--panel-bg);
+            backdrop-filter: blur(24px) saturate(160%);
+            -webkit-backdrop-filter: blur(24px) saturate(160%);
+            border: 1px solid var(--panel-border);
+            border-radius: 24px;
+            padding: 26px;
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 620px;
+            transition: var(--spring);
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: "";
+            position: absolute;
+            top: -1px; left: -1px; right: -1px;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--primary), var(--secondary), transparent);
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* ===== Header ===== */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 22px;
+            gap: 10px;
+        }
+        .brand { display: flex; align-items: center; gap: 10px; }
+        .brand-icon {
+            width: 38px; height: 38px;
+            border-radius: 11px;
+            display: flex; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            box-shadow: 0 8px 20px var(--primary-glow);
+            color: #fff;
+        }
+        .brand-icon svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+        .brand h1 {
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: -0.6px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .brand .subtitle {
+            font-size: 10.5px;
+            color: var(--text-faint);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            margin-top: 1px;
+        }
+        .header-actions { display: flex; gap: 8px; }
+        .icon-btn {
+            background: var(--control-bg);
+            border: 1px solid var(--control-border);
+            border-radius: 11px;
+            width: 38px; height: 38px;
+            display: flex; justify-content: center; align-items: center;
+            cursor: pointer;
+            transition: var(--spring);
+            color: var(--text-main);
+        }
+        .icon-btn:hover { background: var(--control-bg-hover); transform: translateY(-1px); }
+        .icon-btn:active { transform: scale(0.96); }
+        .icon-btn svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+
+        /* ===== Dropzone / Editor ===== */
+        .drop-zone {
+            position: relative;
+            border: 1.5px dashed var(--control-border);
+            border-radius: 16px;
+            background: var(--control-bg);
+            transition: var(--spring);
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+        .drop-zone.dragover {
+            border-color: var(--primary);
+            background: var(--dropzone-hover);
+            box-shadow: 0 0 0 4px var(--primary-glow);
+        }
+        .drop-zone:focus-within { border-color: var(--primary); }
+
+        .input-wrapper {
+            position: relative;
+            width: 100%;
+            min-height: 180px;
+        }
+        textarea {
+            position: relative;
+            width: 100%;
+            min-height: 180px;
+            font-family: 'Inter', sans-serif;
+            font-size: 15.5px;
+            line-height: 1.65;
+            /* Right padding leaves room ONLY for the floating action icons — no footer text */
+            padding: 18px 56px 18px 18px;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: var(--text-main);
+            resize: vertical;
+            caret-color: var(--primary);
+            display: block;
+        }
+        textarea::placeholder { color: var(--text-faint); }
+
+        .backdrop-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            font-family: 'Inter', sans-serif;
+            font-size: 15.5px;
+            line-height: 1.65;
+            padding: 18px 56px 18px 18px;
+            color: transparent;
+            pointer-events: none;
+            background: transparent;
+            overflow: hidden;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .highlight-word {
+            background: var(--highlight-bg);
+            border-radius: 4px;
+            color: transparent;
+            box-shadow: 0 0 0 1px var(--primary-glow), var(--highlight-shadow);
+        }
+
+        /* Floating action buttons INSIDE the dropzone (top-right) */
+        .textarea-actions {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 5;
+        }
+        .action-btn {
+            background: var(--panel-solid);
+            border: 1px solid var(--panel-border);
+            border-radius: 9px;
+            color: var(--text-main);
+            width: 34px;
+            height: 34px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: var(--spring);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+        }
+        .action-btn:hover {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
+        .action-btn:active { transform: scale(0.95); }
+        .action-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+        .action-btn.copied { background: var(--success); border-color: var(--success); color: #fff; }
+
+        /* ===== NEW: Dedicated file-actions row (OUTSIDE the dropzone) ===== */
+        .file-actions {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin: 4px 2px 14px;
+            flex-wrap: wrap;
+        }
+        .file-hint-text {
+            font-size: 12px;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .file-hint-text svg { width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .browse-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--control-bg);
+            border: 1px solid var(--control-border);
+            color: var(--text-main);
+            padding: 9px 14px;
+            border-radius: 10px;
+            font-size: 12.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--spring);
+            font-family: inherit;
+        }
+        .browse-btn:hover {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px var(--primary-glow);
+        }
+        .browse-btn:active { transform: scale(0.97); }
+        .browse-btn svg { width: 15px; height: 15px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+        .browse-btn .exts { font-size: 10px; font-weight: 500; opacity: 0.7; padding-left: 4px; border-left: 1px solid currentColor; margin-left: 2px; }
+        #file-input { display: none; }
+
+        /* ===== Stats Bar ===== */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin: 4px 0 18px;
+        }
+        .stat-badge {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            background: var(--control-bg);
+            padding: 10px 6px;
+            border-radius: 12px;
+            border: 1px solid var(--control-border);
+            transition: var(--spring);
+        }
+        .stat-badge .stat-value {
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-main);
+            font-variant-numeric: tabular-nums;
+        }
+        .stat-badge .stat-label {
+            font-size: 10px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .stat-badge .stat-value.pulse { animation: pulse 0.3s ease; }
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); color: var(--primary); }
+            100% { transform: scale(1); }
+        }
+
+        /* ===== Controls Panel ===== */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-bottom: 18px;
+            background: var(--control-bg);
+            padding: 16px;
+            border-radius: 16px;
+            border: 1px solid var(--control-border);
+        }
+        .control-group { display: flex; flex-direction: column; gap: 8px; }
+        .control-group label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+        .control-group label svg {
+            width: 14px; height: 14px; stroke: currentColor; stroke-width: 2; fill: none;
+            stroke-linecap: round; stroke-linejoin: round;
+        }
+        .control-label-row {
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .control-value {
+            font-size: 12px;
+            color: var(--primary);
+            font-weight: 700;
+            background: var(--control-bg);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .select-wrapper { position: relative; width: 100%; }
+        select {
+            width: 100%;
+            background: var(--panel-solid);
+            border: 1px solid var(--control-border);
+            border-radius: 11px;
+            color: var(--text-main);
+            padding: 12px 38px 12px 14px;
+            font-size: 14px;
+            font-weight: 500;
+            box-sizing: border-box;
+            outline: none;
+            cursor: pointer;
+            transition: var(--spring);
+            -webkit-appearance: none; appearance: none;
+            font-family: inherit;
+        }
+        select:hover { border-color: var(--primary); }
+        select:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-glow); }
+        select option { background: var(--panel-solid); color: var(--text-main); }
+        .select-wrapper::after {
+            content: "";
+            position: absolute;
+            right: 16px; top: 50%;
+            width: 8px; height: 8px;
+            border-right: 2px solid var(--text-muted);
+            border-bottom: 2px solid var(--text-muted);
+            transform: translateY(-65%) rotate(45deg);
+            pointer-events: none;
+            transition: var(--spring);
+        }
+        .select-wrapper:hover::after { border-color: var(--primary); }
+
+        /* ===== Custom Premium Slider ===== */
+        /* Built on a native <input type="range"> for accessibility, but the visual
+           is rendered with an absolutely-positioned dual-layer track + thumb + bubble
+           so it works identically in every browser, including in-app WebViews where
+           the native ::-webkit-slider-runnable-track is unreliable. */
+        .slider-wrap {
+            position: relative;
+            padding: 18px 0 6px;
+            --thumb-size: 20px;
+            --track-h: 6px;
+        }
+        .slider {
+            position: relative;
+            width: 100%;
+            height: var(--thumb-size);
+            display: flex;
+            align-items: center;
+            touch-action: none;
+        }
+        /* The native range is invisible but covers the whole interactive area */
+        .slider input[type="range"] {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            outline: none;
+            cursor: pointer;
+            z-index: 3; /* sits on top so taps reach it */
+        }
+        /* Hide native thumb everywhere — we draw our own */
+        .slider input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: var(--thumb-size);
+            height: var(--thumb-size);
+            background: transparent;
+            border: none;
+            box-shadow: none;
+        }
+        .slider input[type="range"]::-moz-range-thumb {
+            width: var(--thumb-size);
+            height: var(--thumb-size);
+            background: transparent;
+            border: none;
+            box-shadow: none;
+        }
+        .slider input[type="range"]::-webkit-slider-runnable-track { background: transparent; border: none; height: var(--track-h); }
+        .slider input[type="range"]::-moz-range-track { background: transparent; border: none; height: var(--track-h); }
+        .slider input[type="range"]::-webkit-slider-thumb:hover,
+        .slider input[type="range"]::-webkit-slider-thumb:active,
+        .slider input[type="range"]:focus::-webkit-slider-thumb { transform: none; }
+        .slider input[type="range"]::-moz-range-thumb:hover,
+        .slider input[type="range"]::-moz-range-thumb:active { transform: none; }
+
+        /* Visual track layers */
+        .slider-track {
+            position: absolute;
+            left: 0; right: 0;
+            top: 50%;
+            height: var(--track-h);
+            transform: translateY(-50%);
+            background: var(--control-border);
+            border-radius: 999px;
+            overflow: hidden;
+            pointer-events: none;
+            box-shadow: inset 0 1px 1px rgba(0,0,0,0.18);
+        }
+        .slider-fill {
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 0%;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 999px;
+            transition: width 0.08s linear;
+            box-shadow: 0 0 12px var(--primary-glow);
+        }
+        .slider-fill::after {
+            content: "";
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.25), transparent 60%);
+            border-radius: inherit;
+            pointer-events: none;
+        }
+        /* Tick marks: min / mid / max */
+        .slider-ticks {
+            position: absolute;
+            left: 0; right: 0;
+            top: calc(50% + var(--track-h) / 2 + 6px);
+            display: flex;
+            justify-content: space-between;
+            pointer-events: none;
+            font-size: 10px;
+            color: var(--text-faint);
+            font-weight: 600;
+            font-variant-numeric: tabular-nums;
+            letter-spacing: 0.3px;
+        }
+        .slider-ticks span:nth-child(1) { transform: translateX(-50%); }
+        .slider-ticks span:nth-child(2) { transform: translateX(0); }
+        .slider-ticks span:nth-child(3) { transform: translateX(50%); }
+        .slider-ticks-wrap {
+            position: relative;
+            height: 16px;
+            margin-top: 2px;
+        }
+
+        /* Custom thumb */
+        .slider-thumb {
+            position: absolute;
+            top: 50%;
+            left: 0%;
+            width: var(--thumb-size);
+            height: var(--thumb-size);
+            border-radius: 50%;
+            background: #fff;
+            border: 3px solid var(--primary);
+            transform: translate(-50%, -50%);
+            transition: transform 0.12s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+            box-shadow: 0 2px 8px var(--primary-glow), 0 0 0 0 var(--primary-glow);
+            pointer-events: none;
+            z-index: 2;
+        }
+        .slider-thumb::after {
+            content: "";
+            position: absolute;
+            inset: 4px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
+        .slider-wrap:hover .slider-thumb,
+        .slider-wrap.dragging .slider-thumb,
+        .slider-wrap:focus-within .slider-thumb {
+            transform: translate(-50%, -50%) scale(1.18);
+            box-shadow: 0 4px 14px var(--primary-glow), 0 0 0 6px rgba(99,102,241,0.18);
+        }
+
+        /* Floating value bubble that follows the thumb */
+        .slider-bubble {
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 0%;
+            transform: translateX(-50%) translateY(6px);
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 9px;
+            border-radius: 8px;
+            white-space: nowrap;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            box-shadow: 0 4px 12px var(--primary-glow);
+            z-index: 4;
+        }
+        .slider-bubble::after {
+            content: "";
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 4px solid transparent;
+            border-top-color: var(--primary);
+        }
+        .slider-wrap:hover .slider-bubble,
+        .slider-wrap.dragging .slider-bubble,
+        .slider-wrap:focus-within .slider-bubble {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Stepper buttons for fine control */
+        .slider-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .slider-stepper {
+            flex-shrink: 0;
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: var(--control-bg);
+            border: 1px solid var(--control-border);
+            color: var(--text-main);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--spring);
+            font-family: inherit;
+            line-height: 1;
+            padding: 0;
+        }
+        .slider-stepper:hover:not(:disabled) {
+            background: var(--primary);
+            color: #fff;
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
+        .slider-stepper:active:not(:disabled) { transform: scale(0.92); }
+        .slider-stepper:disabled { opacity: 0.3; cursor: not-allowed; }
+        .slider-row .slider-wrap { flex: 1; padding: 14px 0 4px; }
+
+        /* ===== NEW: Playback area — Hero "Speak" + secondary controls ===== */
+        .playback-area {
+            margin-bottom: 12px;
+        }
+        .speak-hero {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: #fff;
+            border: none;
+            border-radius: 16px;
+            padding: 18px 20px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--spring);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 8px 24px var(--primary-glow), inset 0 1px 0 rgba(255,255,255,0.15);
+            font-family: inherit;
+            letter-spacing: 0.3px;
+            position: relative;
+            overflow: hidden;
+        }
+        .speak-hero::before {
+            content: "";
+            position: absolute; inset: 0;
+            background: linear-gradient(180deg, rgba(255,255,255,0.18), transparent 55%);
+            pointer-events: none;
+        }
+        .speak-hero:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 32px var(--primary-glow), inset 0 1px 0 rgba(255,255,255,0.2);
+        }
+        .speak-hero:active:not(:disabled) { transform: translateY(0) scale(0.99); }
+        .speak-hero:disabled { opacity: 0.6; cursor: not-allowed; }
+        .speak-hero svg { width: 20px; height: 20px; fill: currentColor; stroke: none; pointer-events: none; }
+        .speak-hero .speak-pulse {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.6);
+            transform: translate(-50%,-50%);
+            opacity: 0;
+            pointer-events: none;
+        }
+        .speak-hero.speaking {
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
+        }
+        .speak-hero.speaking::after {
+            content: "";
+            position: absolute; inset: 0;
+            border-radius: 16px;
+            background: linear-gradient(135deg, var(--secondary) 0%, var(--primary) 100%);
+            animation: heroGlow 1.6s ease-in-out infinite;
+            z-index: -1;
+            filter: blur(14px);
+            opacity: 0.7;
+        }
+        @keyframes heroGlow {
+            0%, 100% { opacity: 0.45; }
+            50% { opacity: 0.85; }
+        }
+
+        /* Secondary controls row — Pause / Stop / Export. Visible always but most relevant when playing. */
+        .secondary-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .ctrl-btn {
+            background: var(--control-bg);
+            border: 1px solid var(--control-border);
+            color: var(--text-main);
+            border-radius: 12px;
+            padding: 12px 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--spring);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            font-family: inherit;
+            position: relative;
+        }
+        .ctrl-btn:hover:not(:disabled) {
+            background: var(--control-bg-hover);
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
+        .ctrl-btn:active:not(:disabled) { transform: scale(0.97); }
+        .ctrl-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .ctrl-btn svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; pointer-events: none; }
+        .ctrl-btn span { pointer-events: none; }
+        .ctrl-btn.danger:hover:not(:disabled) { background: var(--danger); border-color: var(--danger); color: #fff; }
+        .ctrl-btn.success:hover:not(:disabled) { background: var(--success); border-color: var(--success); color: #fff; }
+
+        /* ===== Visualizer ===== */
+        .visualizer-wrap {
+            display: flex;
+            justify-content: center;
+            margin-top: 4px;
+        }
+        .animation {
+            height: 44px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            padding: 0 16px;
+            min-width: 180px;
+        }
+        .bar {
+            width: 4px;
+            height: 6px;
+            background: linear-gradient(to top, var(--primary), var(--secondary));
+            border-radius: 50px;
+            transition: height 0.15s ease, background 0.3s ease;
+        }
+        .animation.playing .bar { animation: sound 0.6s ease-in-out infinite alternate; }
+        .animation.paused .bar { animation-play-state: paused; background: var(--text-muted); }
+        .animation.playing .bar:nth-child(1) { animation-delay: 0.15s; }
+        .animation.playing .bar:nth-child(2) { animation-delay: 0.35s; }
+        .animation.playing .bar:nth-child(3) { animation-delay: 0.0s; }
+        .animation.playing .bar:nth-child(4) { animation-delay: 0.45s; }
+        .animation.playing .bar:nth-child(5) { animation-delay: 0.25s; }
+        .animation.playing .bar:nth-child(6) { animation-delay: 0.5s; }
+        .animation.playing .bar:nth-child(7) { animation-delay: 0.1s; }
+        @keyframes sound {
+            0% { height: 6px; }
+            100% { height: 36px; }
+        }
+
+        /* ===== Toast ===== */
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(120px);
+            background: var(--panel-solid);
+            color: var(--text-main);
+            padding: 12px 20px;
+            border-radius: 14px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+            transition: all 0.35s cubic-bezier(.2,.8,.2,1);
+            pointer-events: none;
+            z-index: 1000;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid var(--panel-border);
+            text-align: center;
+            max-width: 88%;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+        .toast.success { border-color: var(--success); }
+        .toast.error { border-color: var(--danger); }
+        .toast svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 480px) {
+            body { padding: 10px 10px; }
+            .container { padding: 18px; border-radius: 20px; }
+            .brand h1 { font-size: 18px; }
+            .stats-bar { gap: 6px; }
+            .stat-badge { padding: 8px 4px; }
+            .stat-badge .stat-value { font-size: 13px; }
+            textarea, .backdrop-overlay { font-size: 15px; padding: 16px 50px 16px 16px; }
+            .speak-hero { padding: 16px; font-size: 14px; }
+            .secondary-controls { gap: 6px; }
+            .ctrl-btn { padding: 10px 6px; font-size: 11px; }
+            .file-actions { flex-direction: column; align-items: stretch; }
+            .file-hint-text { justify-content: center; }
+            .browse-btn { justify-content: center; }
+            .slider-stepper { width: 26px; height: 26px; }
+            .slider-ticks { font-size: 9px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="brand">
+                <div class="brand-icon">
+                    <svg viewBox="0 0 24 24">
+                        <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+                        <path d="M19 10v1a7 7 0 0 1-14 0v-1"></path>
+                        <line x1="12" x2="12" y1="19" y2="22"></line>
+                    </svg>
+                </div>
+                <div>
+                    <h1>Vocalise AI</h1>
+                    <div class="subtitle">Premium TTS Pro</div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" id="theme-toggle-btn" title="Toggle Theme" aria-label="Toggle theme">
+                    <svg id="theme-icon" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="4"></circle>
+                        <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Dropzone / Editor (clean — no footer text inside anymore) -->
+        <div class="drop-zone" id="drop-zone">
+            <div class="input-wrapper">
+                <div class="backdrop-overlay" id="backdrop-overlay" aria-hidden="true"></div>
+                <textarea id="text-input" placeholder="Type or paste your text here…" spellcheck="false" autocomplete="off"></textarea>
+            </div>
+            <div class="textarea-actions">
+                <button id="copy-btn" class="action-btn" title="Copy text" aria-label="Copy text">
+                    <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                </button>
+                <button id="clear-btn" class="action-btn" title="Clear text" aria-label="Clear text">
+                    <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- NEW: File actions row — Browse button moved OUTSIDE the textarea area -->
+        <div class="file-actions">
+            <div class="file-hint-text">
+                <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                <span>Or drop a file anywhere in the box above</span>
+            </div>
+            <button type="button" class="browse-btn" id="browse-btn">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                <span>Browse files</span>
+                <span class="exts">TXT · PDF · DOCX</span>
+            </button>
+            <input type="file" id="file-input" accept=".txt,.pdf,.docx,text/plain,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+        </div>
+
+        <!-- Live Stats -->
+        <div class="stats-bar" role="status" aria-live="polite">
+            <div class="stat-badge">
+                <div class="stat-value" id="char-count">0</div>
+                <div class="stat-label">Characters</div>
+            </div>
+            <div class="stat-badge">
+                <div class="stat-value" id="word-count">0</div>
+                <div class="stat-label">Words</div>
+            </div>
+            <div class="stat-badge">
+                <div class="stat-value" id="reading-time">0s</div>
+                <div class="stat-label">Est. Time</div>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <div class="control-group">
+                <label for="voice-select">
+                    <svg viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path><path d="M19 10v1a7 7 0 0 1-14 0v-1"></path><line x1="12" x2="12" y1="19" y2="22"></line></svg>
+                    Voice
+                </label>
+                <div class="select-wrapper">
+                    <select id="voice-select" aria-label="Select voice">
+                        <option value="">Loading voices…</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label-row">
+                    <label for="rate">
+                        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                        Speed
+                    </label>
+                    <span id="rate-value" class="control-value">1.0x</span>
+                </div>
+                <div class="slider-row">
+                    <button type="button" class="slider-stepper" data-target="rate" data-dir="-1" aria-label="Decrease speed">−</button>
+                    <div class="slider-wrap" data-slider="rate">
+                        <div class="slider">
+                            <div class="slider-track"><div class="slider-fill" id="rate-fill"></div></div>
+                            <div class="slider-thumb" id="rate-thumb"></div>
+                            <div class="slider-bubble" id="rate-bubble">1.0x</div>
+                            <input type="range" id="rate" min="0.5" max="2" value="1" step="0.1" aria-label="Speech speed">
+                        </div>
+                        <div class="slider-ticks-wrap">
+                            <div class="slider-ticks">
+                                <span>0.5x</span>
+                                <span>1.0x</span>
+                                <span>2.0x</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="slider-stepper" data-target="rate" data-dir="1" aria-label="Increase speed">+</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <div class="control-label-row">
+                    <label for="pitch">
+                        <svg viewBox="0 0 24 24"><path d="M2 10s3-9 10-9 10 9 10 9-3 9-10 9-10-9-10-9z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                        Pitch
+                    </label>
+                    <span id="pitch-value" class="control-value">1.0</span>
+                </div>
+                <div class="slider-row">
+                    <button type="button" class="slider-stepper" data-target="pitch" data-dir="-1" aria-label="Decrease pitch">−</button>
+                    <div class="slider-wrap" data-slider="pitch">
+                        <div class="slider">
+                            <div class="slider-track"><div class="slider-fill" id="pitch-fill"></div></div>
+                            <div class="slider-thumb" id="pitch-thumb"></div>
+                            <div class="slider-bubble" id="pitch-bubble">1.0</div>
+                            <input type="range" id="pitch" min="0" max="2" value="1" step="0.1" aria-label="Speech pitch">
+                        </div>
+                        <div class="slider-ticks-wrap">
+                            <div class="slider-ticks">
+                                <span>0.0</span>
+                                <span>1.0</span>
+                                <span>2.0</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button type="button" class="slider-stepper" data-target="pitch" data-dir="1" aria-label="Increase pitch">+</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- NEW: Playback area — hero "Speak" + 3 secondary controls -->
+        <div class="playback-area">
+            <button id="speak-btn" class="speak-hero" aria-label="Speak">
+                <svg id="speak-icon" viewBox="0 0 24 24"><polygon points="6 4 20 12 6 20 6 4"></polygon></svg>
+                <span id="speak-text">Speak Now</span>
+            </button>
+
+            <div class="secondary-controls">
+                <button id="pause-btn" class="ctrl-btn" disabled aria-label="Pause">
+                    <svg id="pause-icon" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect></svg>
+                    <span id="pause-text">Pause</span>
+                </button>
+                <button id="stop-btn" class="ctrl-btn danger" disabled aria-label="Stop">
+                    <svg viewBox="0 0 24 24"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
+                    <span>Stop</span>
+                </button>
+                <button id="download-btn" class="ctrl-btn success" aria-label="Export audio">
+                    <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    <span>Export</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Visualizer -->
+        <div class="visualizer-wrap">
+            <div id="visualizer" class="animation" aria-hidden="true">
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div>
+                <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        // PDF.js worker
+        if (window.pdfjsLib) {
+            pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+        }
+
+        // ===== DOM refs =====
+        const body = document.body;
+        const themeToggleBtn = document.getElementById('theme-toggle-btn');
+        const themeIcon = document.getElementById('theme-icon');
+
+        const textInput = document.getElementById('text-input');
+        const backdropOverlay = document.getElementById('backdrop-overlay');
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const browseBtn = document.getElementById('browse-btn');
+
+        const voiceSelect = document.getElementById('voice-select');
+        const rateInput = document.getElementById('rate');
+        const pitchInput = document.getElementById('pitch');
+        const rateValue = document.getElementById('rate-value');
+        const pitchValue = document.getElementById('pitch-value');
+
+        const speakBtn = document.getElementById('speak-btn');
+        const speakText = document.getElementById('speak-text');
+        const speakIcon = document.getElementById('speak-icon');
+        const pauseBtn = document.getElementById('pause-btn');
+        const pauseText = document.getElementById('pause-text');
+        const pauseIcon = document.getElementById('pause-icon');
+        const stopBtn = document.getElementById('stop-btn');
+        const downloadBtn = document.getElementById('download-btn');
+
+        const copyBtn = document.getElementById('copy-btn');
+        const clearBtn = document.getElementById('clear-btn');
+
+        const charCountEl = document.getElementById('char-count');
+        const wordCountEl = document.getElementById('word-count');
+        const readingTimeEl = document.getElementById('reading-time');
+
+        const visualizer = document.getElementById('visualizer');
+        const toast = document.getElementById('toast');
+
+        // ===== State =====
+        let voices = [];
+        let currentUtterance = null;
+        let isSpeakingState = false;
+        let toastTimer = null;
+        let speechPrimed = false; // track whether we've kicked the TTS engine at least once
+
+        // ===== Theme =====
+        const savedTheme = localStorage.getItem('tts_theme') || 'dark';
+        body.setAttribute('data-theme', savedTheme);
+        updateThemeIcon(savedTheme);
+
+        themeToggleBtn.addEventListener('click', () => {
+            const current = body.getAttribute('data-theme') || 'dark';
+            const next = current === 'light' ? 'dark' : 'light';
+            body.setAttribute('data-theme', next);
+            localStorage.setItem('tts_theme', next);
+            updateThemeIcon(next);
+            showToast(`Theme: ${next === 'light' ? 'Light' : 'Dark'}`, 'success');
+        });
+
+        function updateThemeIcon(theme) {
+            themeIcon.innerHTML = theme === 'light'
+                ? '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>'
+                : '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>';
+        }
+
+        // ===== Slider visuals =====
+        // Each custom slider has: a hidden native <input>, a visual fill, a visual thumb,
+        // and an optional bubble. This function positions all three to match the
+        // native value. Direct inline style is used (not CSS variables) because some
+        // in-app WebViews drop var() inside the inherited background — leading to the
+        // "fill stops halfway" bug seen in the previous version.
+        const sliderRegistry = {
+            rate: {
+                input: rateInput,
+                fill: document.getElementById('rate-fill'),
+                thumb: document.getElementById('rate-thumb'),
+                bubble: document.getElementById('rate-bubble'),
+                wrap: document.querySelector('[data-slider="rate"]'),
+                format: v => parseFloat(v).toFixed(1) + 'x'
+            },
+            pitch: {
+                input: pitchInput,
+                fill: document.getElementById('pitch-fill'),
+                thumb: document.getElementById('pitch-thumb'),
+                bubble: document.getElementById('pitch-bubble'),
+                wrap: document.querySelector('[data-slider="pitch"]'),
+                format: v => parseFloat(v).toFixed(1)
+            }
+        };
+
+        function updateSliderVisual(key) {
+            const s = sliderRegistry[key];
+            if (!s || !s.input) return;
+            const min = parseFloat(s.input.min) || 0;
+            const max = parseFloat(s.input.max) || 1;
+            const val = parseFloat(s.input.value);
+            const pct = ((val - min) / (max - min)) * 100;
+            // Clamp to [0, 100]
+            const clamped = Math.max(0, Math.min(100, pct));
+            if (s.fill) s.fill.style.width = clamped + '%';
+            if (s.thumb) s.thumb.style.left = clamped + '%';
+            if (s.bubble) {
+                s.bubble.style.left = clamped + '%';
+                s.bubble.textContent = s.format(val);
+            }
+        }
+        function updateAllSliders() {
+            updateSliderVisual('rate');
+            updateSliderVisual('pitch');
+        }
+        updateAllSliders();
+
+        // Show "dragging" state on the wrapper so we can tweak shadow/transform.
+        // We use 'pointerdown' to detect start and 'pointerup' globally to detect end.
+        Object.keys(sliderRegistry).forEach(key => {
+            const s = sliderRegistry[key];
+            if (!s.input) return;
+            const onDown = () => s.wrap && s.wrap.classList.add('dragging');
+            const onUp = () => s.wrap && s.wrap.classList.remove('dragging');
+            s.input.addEventListener('pointerdown', onDown);
+            s.input.addEventListener('mousedown', onDown);
+            s.input.addEventListener('touchstart', onDown, { passive: true });
+            window.addEventListener('pointerup', onUp);
+            window.addEventListener('mouseup', onUp);
+            window.addEventListener('touchend', onUp);
+        });
+
+        // Steppers (+ / − buttons) — clamp and trigger update
+        document.querySelectorAll('.slider-stepper').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const target = btn.getAttribute('data-target');
+                const dir = parseInt(btn.getAttribute('data-dir'), 10);
+                const s = sliderRegistry[target];
+                if (!s) return;
+                const min = parseFloat(s.input.min);
+                const max = parseFloat(s.input.max);
+                const step = parseFloat(s.input.step) || 0.1;
+                let val = parseFloat(s.input.value) + dir * step;
+                val = Math.max(min, Math.min(max, parseFloat(val.toFixed(2))));
+                s.input.value = val;
+                s.input.dispatchEvent(new Event('input', { bubbles: true }));
+            });
+        });
+
+        // ===== Stats =====
+        function updateStatsAndDraft() {
+            const text = textInput.value || '';
+            const charCount = [...text].length;
+            const wordsArray = text.trim().split(/\s+/).filter(w => w.length > 0);
+            const wordCount = wordsArray.length;
+
+            setStat(charCountEl, charCount.toLocaleString());
+            setStat(wordCountEl, wordCount.toLocaleString());
+
+            const speedMultiplier = parseFloat(rateInput.value) || 1.0;
+            const baseWPM = 150;
+            const effectiveWPM = baseWPM * speedMultiplier;
+            const totalSeconds = wordCount > 0 ? Math.max(1, Math.ceil((wordCount / effectiveWPM) * 60)) : 0;
+            const timeText = totalSeconds === 0 ? '0s' : (totalSeconds < 60 ? `${totalSeconds}s` : `${Math.floor(totalSeconds/60)}m ${totalSeconds%60}s`);
+            setStat(readingTimeEl, timeText);
+
+            backdropOverlay.innerHTML = escapeHtml(text);
+            syncScroll();
+
+            try { localStorage.setItem('tts_draft_text', text); } catch(e) {}
+        }
+
+        function setStat(el, value) {
+            if (!el) return;
+            if (el.textContent !== value) {
+                el.textContent = value;
+                el.classList.remove('pulse');
+                void el.offsetWidth;
+                el.classList.add('pulse');
+            }
+        }
+
+        function syncScroll() {
+            backdropOverlay.scrollTop = textInput.scrollTop;
+            backdropOverlay.scrollLeft = textInput.scrollLeft;
+        }
+
+        textInput.addEventListener('scroll', syncScroll, { passive: true });
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function loadDraft() {
+            try {
+                const saved = localStorage.getItem('tts_draft_text');
+                textInput.value = saved || '';
+            } catch(e) { textInput.value = ''; }
+            updateStatsAndDraft();
+        }
+
+        // ===== Toast =====
+        function showToast(message, kind) {
+            const icon = kind === 'success'
+                ? '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>'
+                : kind === 'error'
+                    ? '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>'
+                    : '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>';
+            toast.innerHTML = icon + '<span>' + message + '</span>';
+            toast.className = 'toast show' + (kind ? ' ' + kind : '');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => { toast.className = 'toast'; }, 2600);
+        }
+
+        // ===== File handling =====
+        function handleFile(file) {
+            if (!file) return;
+            const ext = (file.name.split('.').pop() || '').toLowerCase();
+            showToast(`Loading ${file.name}…`);
+            if (ext === 'txt') return parseTxtFile(file);
+            if (ext === 'pdf') return parsePdfFile(file);
+            if (ext === 'docx') return parseDocxFile(file);
+            showToast('Unsupported file. Use TXT, PDF or DOCX.', 'error');
+        }
+
+        function parseTxtFile(file) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                textInput.value = e.target.result;
+                updateStatsAndDraft();
+                showToast('Text file loaded!', 'success');
+            };
+            reader.onerror = () => showToast('Failed to read file.', 'error');
+            reader.readAsText(file);
+        }
+
+        function parsePdfFile(file) {
+            const reader = new FileReader();
+            reader.onload = function() {
+                if (!window.pdfjsLib) { showToast('PDF library not loaded.', 'error'); return; }
+                const typedarray = new Uint8Array(this.result);
+                pdfjsLib.getDocument(typedarray).promise.then(async (pdf) => {
+                    let extracted = '';
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        try {
+                            const page = await pdf.getPage(i);
+                            const content = await page.getTextContent();
+                            extracted += content.items.map(it => it.str).join(' ') + '\n';
+                        } catch(err) {}
+                    }
+                    if (extracted.trim()) {
+                        textInput.value = extracted;
+                        updateStatsAndDraft();
+                        showToast('PDF loaded!', 'success');
+                    } else {
+                        showToast('No readable text in PDF.', 'error');
+                    }
+                }).catch(() => showToast('Error reading PDF.', 'error'));
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function parseDocxFile(file) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                if (!window.mammoth) { showToast('DOCX library not loaded.', 'error'); return; }
+                mammoth.extractRawText({ arrayBuffer: e.target.result })
+                    .then(result => {
+                        textInput.value = result.value;
+                        updateStatsAndDraft();
+                        showToast('Word document loaded!', 'success');
+                    })
+                    .catch(() => showToast('Error reading DOCX.', 'error'));
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // Drag & drop on the whole dropzone
+        ['dragenter','dragover'].forEach(ev => {
+            dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.add('dragover'); }, false);
+        });
+        ['dragleave','drop'].forEach(ev => {
+            dropZone.addEventListener(ev, e => { e.preventDefault(); dropZone.classList.remove('dragover'); }, false);
+        });
+        dropZone.addEventListener('drop', e => {
+            const files = e.dataTransfer && e.dataTransfer.files;
+            if (files && files.length > 0) handleFile(files[0]);
+        });
+
+        // NEW: Browse button outside the dropzone — triggers the file picker
+        browseBtn.addEventListener('click', () => {
+            try { fileInput.click(); } catch(e) {
+                showToast('File picker unavailable.', 'error');
+            }
+        });
+        fileInput.addEventListener('change', e => {
+            if (e.target.files.length > 0) handleFile(e.target.files[0]);
+            fileInput.value = '';
+        });
+
+        // ===== Clipboard =====
+        function copyToClipboard(text) {
+            return new Promise((resolve) => {
+                if (navigator.clipboard && window.isSecureContext) {
+                    navigator.clipboard.writeText(text).then(
+                        () => resolve(true),
+                        () => fallbackCopy(text).then(resolve, () => resolve(false))
+                    );
+                    return;
+                }
+                fallbackCopy(text).then(resolve, () => resolve(false));
+            });
+        }
+
+        function fallbackCopy(text) {
+            return new Promise((resolve, reject) => {
+                try {
+                    const ta = document.createElement('textarea');
+                    ta.value = text;
+                    ta.setAttribute('readonly', '');
+                    ta.style.position = 'fixed';
+                    ta.style.top = '0';
+                    ta.style.left = '0';
+                    ta.style.opacity = '0';
+                    ta.style.pointerEvents = 'none';
+                    document.body.appendChild(ta);
+                    ta.focus();
+                    ta.select();
+                    ta.setSelectionRange(0, text.length);
+                    const ok = document.execCommand && document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    ok ? resolve(true) : reject(new Error('execCommand failed'));
+                } catch (err) {
+                    reject(err);
+                }
+            });
+        }
+
+        copyBtn.addEventListener('click', async () => {
+            const text = textInput.value || '';
+            if (!text.trim()) { showToast('Nothing to copy!', 'error'); return; }
+
+            const ok = await copyToClipboard(text);
+            if (ok) {
+                copyBtn.classList.add('copied');
+                setTimeout(() => copyBtn.classList.remove('copied'), 1200);
+                showToast('Copied to clipboard!', 'success');
+            } else {
+                showToast('Copy blocked — select text manually', 'error');
+                const preview = document.createElement('textarea');
+                preview.value = text;
+                preview.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);width:80%;max-width:520px;height:60vh;z-index:2000;padding:16px;border-radius:12px;background:#fff;color:#000;border:1px solid #6366f1;font-family:monospace;box-shadow:0 20px 60px rgba(0,0,0,.4);';
+                const close = document.createElement('button');
+                close.textContent = 'Close';
+                close.style.cssText = 'position:fixed;top:calc(50% + 31vh);left:50%;transform:translateX(-50%);z-index:2001;padding:10px 20px;border-radius:10px;background:#6366f1;color:#fff;border:none;font-weight:600;cursor:pointer;';
+                close.onclick = () => { document.body.removeChild(preview); document.body.removeChild(close); };
+                document.body.appendChild(preview);
+                document.body.appendChild(close);
+                preview.focus(); preview.select();
+            }
+        });
+
+        clearBtn.addEventListener('click', () => {
+            if (!textInput.value && !speechSynthesis.speaking) { return; }
+            textInput.value = '';
+            updateStatsAndDraft();
+            if (speechSynthesis.speaking) stopSpeech();
+            showToast('Cleared!', 'success');
+        });
+
+        // ===== Voice population =====
+        function populateVoiceList() {
+            const available = speechSynthesis.getVoices();
+            if (!available || available.length === 0) return;
+            voices = available;
+
+            const sorted = voices.map((v, i) => ({ v, i })).sort((a, b) => {
+                const aEn = a.v.lang.toLowerCase().startsWith('en') ? 0 : 1;
+                const bEn = b.v.lang.toLowerCase().startsWith('en') ? 0 : 1;
+                if (aEn !== bEn) return aEn - bEn;
+                return a.v.name.localeCompare(b.v.name);
+            });
+
+            voiceSelect.innerHTML = sorted.map(({ v, i }) =>
+                `<option value="${i}">${v.name} — ${v.lang}</option>`
+            ).join('');
+
+            const savedIdx = localStorage.getItem('tts_voice_idx');
+            if (savedIdx !== null && voices[savedIdx]) {
+                voiceSelect.value = savedIdx;
+            } else {
+                const enIn = voices.findIndex(v => v.lang === 'en-IN');
+                const en = voices.findIndex(v => v.lang.toLowerCase().startsWith('en'));
+                const idx = enIn !== -1 ? enIn : (en !== -1 ? en : 0);
+                voiceSelect.value = idx;
+                localStorage.setItem('tts_voice_idx', idx);
+            }
+        }
+        voiceSelect.addEventListener('change', () => {
+            localStorage.setItem('tts_voice_idx', voiceSelect.value);
+        });
+
+        function initVoices() {
+            populateVoiceList();
+            if (typeof speechSynthesis !== 'undefined' && speechSynthesis.onvoiceschanged !== undefined) {
+                speechSynthesis.onvoiceschanged = populateVoiceList;
+            }
+        }
+        initVoices();
+
+        // ===== Sliders =====
+        rateInput.addEventListener('input', () => {
+            rateValue.textContent = parseFloat(rateInput.value).toFixed(1) + 'x';
+            updateSliderVisual('rate');
+            updateStatsAndDraft();
+            if (currentUtterance && speechSynthesis.speaking) {
+                try { speechSynthesis.cancel(); } catch(e) {}
+                startSpeech();
+            }
+        });
+        pitchInput.addEventListener('input', () => {
+            pitchValue.textContent = parseFloat(pitchInput.value).toFixed(1);
+            updateSliderVisual('pitch');
+        });
+
+        // ===== Highlighting =====
+        let fallbackHighlightTimer = null;
+        let fallbackStartedAt = 0;
+        let fallbackWords = [];
+        let fallbackIdx = 0;
+
+        function highlightWordAtIndex(charIndex, wordLength) {
+            const text = textInput.value || '';
+            if (charIndex === undefined || charIndex < 0 || charIndex >= text.length) return;
+            const before = text.slice(0, charIndex);
+            const word = text.slice(charIndex, charIndex + (wordLength || 1));
+            const after = text.slice(charIndex + (wordLength || 1));
+            backdropOverlay.innerHTML = escapeHtml(before) + `<span class="highlight-word">${escapeHtml(word)}</span>` + escapeHtml(after);
+            autoScrollToHighlight();
+        }
+
+        function autoScrollToHighlight() {
+            const hl = backdropOverlay.querySelector('.highlight-word');
+            if (!hl) return;
+            const top = hl.offsetTop;
+            const vh = backdropOverlay.clientHeight;
+            if (top > (backdropOverlay.scrollTop + vh - 50) || top < backdropOverlay.scrollTop) {
+                textInput.scrollTop = Math.max(0, top - vh / 2);
+                syncScroll();
+            }
+        }
+
+        function clearWordHighlighting() {
+            backdropOverlay.innerHTML = escapeHtml(textInput.value || '');
+            syncScroll();
+        }
+
+        function startFallbackHighlighting() {
+            stopFallbackHighlighting();
+            const text = textInput.value || '';
+            fallbackWords = text.match(/\S+/g) || [];
+            if (fallbackWords.length === 0) return;
+            const rate = parseFloat(rateInput.value) || 1.0;
+            const msPerWord = Math.max(80, 60000 / (150 * rate));
+            fallbackIdx = 0;
+            fallbackStartedAt = performance.now();
+            fallbackHighlightTimer = setInterval(() => {
+                if (!speechSynthesis.speaking || speechSynthesis.paused) return;
+                const elapsed = performance.now() - fallbackStartedAt;
+                const target = Math.min(fallbackWords.length - 1, Math.floor(elapsed / msPerWord));
+                if (target !== fallbackIdx) {
+                    fallbackIdx = target;
+                    const word = fallbackWords[fallbackIdx];
+                    const prev = fallbackIdx === 0 ? 0 : (text.indexOf(fallbackWords[fallbackIdx-1]) + fallbackWords[fallbackIdx-1].length);
+                    const idx = text.indexOf(word, prev);
+                    if (idx >= 0) highlightWordAtIndex(idx, word.length);
+                }
+                if (fallbackIdx >= fallbackWords.length - 1) stopFallbackHighlighting();
+            }, 60);
+        }
+        function stopFallbackHighlighting() {
+            if (fallbackHighlightTimer) { clearInterval(fallbackHighlightTimer); fallbackHighlightTimer = null; }
+        }
+
+        // ===== Speech engine =====
+        const ICON_PLAY = '<polygon points="6 4 20 12 6 20 6 4"></polygon>';
+        const ICON_RESUME = '<polygon points="6 4 20 12 6 20 6 4"></polygon>';
+        const ICON_SPEAKING = '<polygon points="6 4 20 12 6 20 6 4"></polygon>';
+        const ICON_PAUSE = '<rect x="6" y="4" width="4" height="16" rx="1"></rect><rect x="14" y="4" width="4" height="16" rx="1"></rect>';
+        const ICON_PLAY_SMALL = '<polygon points="7 5 19 12 7 19 7 5"></polygon>';
+
+        function setButtonIcon(btn, iconEl, html) {
+            if (iconEl) iconEl.innerHTML = html;
+            else {
+                const svg = btn.querySelector('svg');
+                if (svg) svg.innerHTML = html;
+            }
+        }
+
+        function updateUIForState(state) {
+            switch (state) {
+                case 'speaking':
+                    speakBtn.disabled = true;
+                    speakBtn.classList.add('speaking');
+                    speakText.textContent = 'Speaking…';
+                    speakIcon.innerHTML = ICON_SPEAKING;
+                    pauseBtn.disabled = false;
+                    pauseText.textContent = 'Pause';
+                    pauseIcon.innerHTML = ICON_PAUSE;
+                    stopBtn.disabled = false;
+                    downloadBtn.disabled = true;
+                    visualizer.className = 'animation playing';
+                    break;
+                case 'paused':
+                    speakBtn.disabled = false;
+                    speakBtn.classList.remove('speaking');
+                    speakText.textContent = 'Resume';
+                    speakIcon.innerHTML = ICON_PLAY;
+                    pauseBtn.disabled = true;
+                    pauseText.textContent = 'Paused';
+                    pauseIcon.innerHTML = ICON_PLAY_SMALL;
+                    stopBtn.disabled = false;
+                    downloadBtn.disabled = true;
+                    visualizer.className = 'animation paused';
+                    break;
+                case 'idle':
+                default:
+                    speakBtn.disabled = false;
+                    speakBtn.classList.remove('speaking');
+                    speakText.textContent = 'Speak Now';
+                    speakIcon.innerHTML = ICON_PLAY;
+                    pauseBtn.disabled = true;
+                    pauseText.textContent = 'Pause';
+                    pauseIcon.innerHTML = ICON_PAUSE;
+                    stopBtn.disabled = true;
+                    downloadBtn.disabled = false;
+                    visualizer.className = 'animation';
+                    isSpeakingState = false;
+                    currentUtterance = null;
+                    stopFallbackHighlighting();
+                    clearWordHighlighting();
+            }
+        }
+
+        // FIX #3 — Speak button "prime" pattern for in-app browsers:
+        // Many WebViews (Instagram, FB, Line, WeChat, some Android WebViews) need
+        // the TTS engine to be kicked with a tiny silent utterance from inside a
+        // user-gesture handler before the first "real" speech will work. We do
+        // that here, then immediately queue the real text.
+        function primeSpeechEngine() {
+            if (speechPrimed) return Promise.resolve();
+            return new Promise((resolve) => {
+                try {
+                    const primer = new SpeechSynthesisUtterance(' ');
+                    primer.volume = 0;
+                    primer.rate = 1;
+                    primer.pitch = 1;
+                    const done = () => { speechPrimed = true; resolve(); };
+                    primer.onend = done;
+                    primer.onerror = done;
+                    // Some engines never call onend for silent utterances — fall back
+                    speechSynthesis.speak(primer);
+                    setTimeout(done, 350);
+                } catch (e) {
+                    speechPrimed = true;
+                    resolve();
+                }
+            });
+        }
+
+        function startSpeech() {
+            const text = textInput.value || '';
+            if (!text.trim()) { showToast('Please enter some text first!', 'error'); return; }
+
+            // Prime the engine first (no-op if already primed) — fixes many in-app browsers
+            primeSpeechEngine().then(() => {
+                try { speechSynthesis.cancel(); } catch(e) {}
+
+                currentUtterance = new SpeechSynthesisUtterance(text);
+                const v = voices[voiceSelect.value];
+                if (v) currentUtterance.voice = v;
+                currentUtterance.rate = parseFloat(rateInput.value);
+                currentUtterance.pitch = parseFloat(pitchInput.value);
+
+                let boundaryFired = false;
+
+                currentUtterance.onstart = () => {
+                    isSpeakingState = true;
+                    updateUIForState('speaking');
+                    setTimeout(() => { if (!boundaryFired) startFallbackHighlighting(); }, 500);
+                };
+                currentUtterance.onboundary = (e) => {
+                    if (e.name === 'word') {
+                        boundaryFired = true;
+                        stopFallbackHighlighting();
+                        highlightWordAtIndex(e.charIndex, e.charLength || 1);
+                    }
+                };
+                currentUtterance.onend = () => { stopFallbackHighlighting(); updateUIForState('idle'); };
+                currentUtterance.onerror = () => { stopFallbackHighlighting(); updateUIForState('idle'); };
+
+                try {
+                    speechSynthesis.speak(currentUtterance);
+                } catch (e) {
+                    // Retry once after a short pause — some browsers throw on rapid re-speak
+                    setTimeout(() => {
+                        try { speechSynthesis.speak(currentUtterance); }
+                        catch (e2) {
+                            showToast('Speech unavailable in this browser.', 'error');
+                            updateUIForState('idle');
+                        }
+                    }, 200);
+                    return;
+                }
+
+                // WebViews that don't fire onstart promptly — manual UI upgrade
+                setTimeout(() => {
+                    if (speechSynthesis.speaking && !isSpeakingState) {
+                        isSpeakingState = true;
+                        updateUIForState('speaking');
+                    }
+                }, 300);
+            });
+        }
+
+        speakBtn.addEventListener('click', () => {
+            if (speechSynthesis.paused) {
+                try { speechSynthesis.resume(); } catch(e) {}
+                isSpeakingState = true;
+                updateUIForState('speaking');
+                return;
+            }
+            startSpeech();
+        });
+
+        pauseBtn.addEventListener('click', () => {
+            if (speechSynthesis.speaking && !speechSynthesis.paused) {
+                try { speechSynthesis.pause(); } catch(e) {}
+                updateUIForState('paused');
+            }
+        });
+
+        function stopSpeech() {
+            try { speechSynthesis.cancel(); } catch(e) {}
+            stopFallbackHighlighting();
+            updateUIForState('idle');
+        }
+        stopBtn.addEventListener('click', stopSpeech);
+
+        setInterval(() => {
+            if (isSpeakingState && !speechSynthesis.speaking && !speechSynthesis.paused) {
+                updateUIForState('idle');
+            }
+        }, 1000);
+
+        // ===== Export =====
+        downloadBtn.addEventListener('click', async () => {
+            const text = textInput.value || '';
+            if (!text.trim()) { showToast('Nothing to export!', 'error'); return; }
+            if (!navigator.mediaDevices || typeof MediaRecorder === 'undefined') {
+                showToast('Export not supported on this browser.', 'error');
+                return;
+            }
+            showToast('Preparing audio…');
+            try {
+                const AudioCtx = window.AudioContext || window.webkitAudioContext;
+                const audioCtx = new AudioCtx();
+                if (audioCtx.state === 'suspended') await audioCtx.resume();
+                const dest = audioCtx.createMediaStreamDestination();
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                const v = voices[voiceSelect.value];
+                if (v) utterance.voice = v;
+                utterance.rate = parseFloat(rateInput.value);
+                utterance.pitch = parseFloat(pitchInput.value);
+
+                const recorder = new MediaRecorder(dest.stream);
+                const chunks = [];
+                recorder.ondataavailable = e => { if (e.data && e.data.size > 0) chunks.push(e.data); };
+
+                const originalHTML = downloadBtn.innerHTML;
+                recorder.onstart = () => {
+                    downloadBtn.disabled = true;
+                    downloadBtn.innerHTML = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="6" fill="currentColor"></circle></svg><span>Recording</span>';
+                };
+                recorder.onstop = () => {
+                    const blob = new Blob(chunks, { type: 'audio/webm' });
+                    const ext = blob.type.includes('webm') ? 'webm' : 'wav';
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `vocalise-ai-${Date.now()}.${ext}`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                    audioCtx.close().catch(()=>{});
+                    downloadBtn.innerHTML = originalHTML;
+                    downloadBtn.disabled = false;
+                    showToast('Audio downloaded!', 'success');
+                };
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                gain.gain.value = 0;
+                osc.connect(gain).connect(dest);
+                osc.start();
+
+                recorder.start();
+                utterance.onend = () => { setTimeout(() => recorder.stop(), 400); };
+                utterance.onerror = () => { recorder.stop(); showToast('Export failed.', 'error'); };
+                try { speechSynthesis.speak(utterance); } catch(e) { recorder.stop(); showToast('Export failed.', 'error'); }
+            } catch (err) {
+                showToast('Audio export blocked by browser.', 'error');
+            }
+        });
+
+        // ===== Live stats =====
+        ['input', 'change', 'keyup', 'paste'].forEach(ev => {
+            textInput.addEventListener(ev, () => {
+                requestAnimationFrame(updateStatsAndDraft);
+            });
+        });
+
+        // ===== Init =====
+        loadDraft();
+        updateStatsAndDraft();
+
+        setTimeout(() => {
+            if (voices.length === 0) {
+                voiceSelect.innerHTML = '<option value="">No system voices available</option>';
+            }
+        }, 1500);
+
+    })();
+    </script>
+</body>
+</html>
